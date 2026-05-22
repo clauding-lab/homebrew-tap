@@ -1,0 +1,87 @@
+name: auto-update clauge cask
+
+# Triggered by repository_dispatch from clauding-lab/clauge's release.yml
+# when a new v* tag is published. Also runs nightly as a safety net in case
+# the dispatch was missed.
+
+on:
+  repository_dispatch:
+    types: [clauge-release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Clauge version (without leading v, e.g. 0.9.1)'
+        required: true
+  schedule:
+    - cron: '17 4 * * *'  # 04:17 UTC daily — well clear of release windows
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve latest Clauge version
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ github.event.client_payload.version || '' }}" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          elif [ -n "${{ github.event.inputs.version || '' }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Scheduled run — fetch latest release tag from clauge
+            TAG=$(gh release view --repo clauding-lab/clauge --json tagName --jq .tagName)
+            VERSION="${TAG#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VERSION"
+
+      - name: Read current cask version
+        id: current
+        run: |
+          CURRENT=$(grep -E '^\s*version "' Casks/clauge.rb | sed -E 's/.*"(.*)".*/\1/')
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "Current cask version: $CURRENT"
+
+      - name: Skip if already up to date
+        if: steps.resolve.outputs.version == steps.current.outputs.version
+        run: |
+          echo "Cask already at ${{ steps.resolve.outputs.version }}; nothing to do."
+          echo "BUMP_NEEDED=false" >> "$GITHUB_ENV"
+
+      - name: Compute new SHA256
+        if: steps.resolve.outputs.version != steps.current.outputs.version
+        id: sha
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.resolve.outputs.version }}"
+          URL="https://github.com/clauding-lab/clauge/releases/download/v${VERSION}/Clauge_${VERSION}_universal.dmg"
+          echo "Downloading $URL"
+          curl -fsSL -o clauge.dmg "$URL"
+          SHA=$(sha256sum clauge.dmg | cut -d' ' -f1)
+          rm clauge.dmg
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "New SHA256: $SHA"
+
+      - name: Update cask
+        if: steps.resolve.outputs.version != steps.current.outputs.version
+        run: |
+          sed -i -E 's/^(\s*version )"[^"]+"/\1"${{ steps.resolve.outputs.version }}"/' Casks/clauge.rb
+          sed -i -E 's/^(\s*sha256 )"[^"]+"/\1"${{ steps.sha.outputs.sha }}"/' Casks/clauge.rb
+          cat Casks/clauge.rb
+
+      - name: Commit + push
+        if: steps.resolve.outputs.version != steps.current.outputs.version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/clauge.rb
+          git commit -m "chore: bump clauge to ${{ steps.resolve.outputs.version }}"
+          git push origin HEAD:main
