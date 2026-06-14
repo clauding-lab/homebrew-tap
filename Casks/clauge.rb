@@ -1,6 +1,6 @@
 cask "clauge" do
-  version "1.3.0"
-  sha256 "453e19ae579c9282ca795fcc12e85ca5008c0aa5ab7615318feaf117d5a8c35c"
+  version "1.3.1"
+  sha256 "8af65537c772fe0214d7f5b4c2c73d3ee99955c2064be751c4dae1408aab469f"
 
   url "https://github.com/clauding-lab/clauge/releases/download/v#{version}/Clauge_#{version}_universal.dmg"
   name "Clauge"
