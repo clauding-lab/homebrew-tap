@@ -10,6 +10,10 @@ cask "clauge" do
   depends_on macos: ">= :monterey"
 
   app "Clauge.app"
+  # The bundled CLI wrapper (working from v1.3.4 — earlier builds shipped it
+  # broken; clauge PR #66). Tauri nests the resources dir, hence the double
+  # Resources. The wrapper canonicalizes the symlink Homebrew creates here.
+  binary "#{appdir}/Clauge.app/Contents/Resources/Resources/clauge-cli", target: "clauge"
 
   zap trash: [
     "~/Library/Application Support/Clauge",
