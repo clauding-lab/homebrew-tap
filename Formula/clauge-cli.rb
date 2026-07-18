@@ -30,9 +30,10 @@ class ClaugeCli < Formula
   end
 
   test do
-    # `--help` prints usage and exits 0 with no app running. (Switch to
-    # `--version` once the cask ships >= 1.3.5 — 1.3.4's binary has a known
-    # --version-only defect, fixed in clauge#70.)
+    # Works from 1.3.5 (clauge#70 fixed --version under the SEA layout;
+    # verified on the published 1.3.5 DMG). Pins version-string plumbing,
+    # which --help alone never exercised.
+    assert_match version.to_s, shell_output("#{bin}/clauge --version")
     assert_match "usage: clauge", shell_output("#{bin}/clauge --help")
   end
 end
