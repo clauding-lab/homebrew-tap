@@ -12,9 +12,9 @@
 class ClaugeCli < Formula
   desc "Standalone Clauge CLI and Claude Code statusline widget"
   homepage "https://github.com/clauding-lab/clauge"
-  url "https://github.com/clauding-lab/clauge/releases/download/v1.3.6/Clauge_universal.app.tar.gz"
-  version "1.3.6"
-  sha256 "78c59b5f65793df256d8a60ec44b136a729f8efab3a819735d47b0f0c64bb90b"
+  url "https://github.com/clauding-lab/clauge/releases/download/v1.3.7/Clauge_universal.app.tar.gz"
+  version "1.3.7"
+  sha256 "a608bda2b575b3edc381f3d00be246d86d5107c634b9b2ad9e878840a6363dac"
   license "MIT"
 
   depends_on :macos
